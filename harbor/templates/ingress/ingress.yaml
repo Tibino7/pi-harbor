@@ -1,0 +1,139 @@
+{{- if semverCompare "<1.14-0" .Capabilities.KubeVersion.GitVersion }}
+apiVersion: extensions/v1beta1
+{{- else if semverCompare "<1.19-0" .Capabilities.KubeVersion.GitVersion }}
+apiVersion: networking.k8s.io/v1beta1
+{{- else }}
+apiVersion: networking.k8s.io/v1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ template "harbor.ingress" . }}
+  annotations:
+{{ toYaml .Values.expose.ingress.annotations | indent 4 }}
+{{- if .Values.internalTLS.enabled }}
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.expose.ingress.ingressClassName }}
+  rules:
+  - host: {{ .Values.expose.ingress.hosts.core }}
+    http:
+      paths:
+{{- if semverCompare "<1.19-0" .Capabilities.KubeVersion.GitVersion }}
+      - path: "/"
+        backend:
+          serviceName: {{ template "harbor.portal" . }}
+          servicePort: {{ template "harbor.portal.servicePort" . }}
+      - path: "/api"
+        backend:
+          serviceName: {{ template "harbor.core" . }}
+          servicePort: {{ template "harbor.core.servicePort" . }}
+      - path: "/service"
+        backend:
+          serviceName: {{ template "harbor.core" . }}
+          servicePort: {{ template "harbor.core.servicePort" . }}
+      - path: "/v2"
+        backend:
+          serviceName: {{ template "harbor.core" . }}
+          servicePort: {{ template "harbor.core.servicePort" . }}
+      - path: "/chartrepo"
+        backend:
+          serviceName: {{ template "harbor.core" . }}
+          servicePort: {{ template "harbor.core.servicePort" . }}
+      - path: "/c"
+        backend:
+          serviceName: {{ template "harbor.core" . }}
+          servicePort: {{ template "harbor.core.servicePort" . }}
+{{- else }}
+      - path: "/" 
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.portal" . }}
+            port:
+              number: {{ template "harbor.portal.servicePort" . }}
+      - path: "/api"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.core" . }}
+            port:
+              number: {{ template "harbor.core.servicePort" . }}
+      - path: "/service"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.core" . }}
+            port:
+              number: {{ template "harbor.core.servicePort" . }}
+      - path: "/v2"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.core" . }}
+            port:
+              number: {{ template "harbor.core.servicePort" . }}
+      - path: "/chartrepo"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.core" . }}
+            port:
+              number: {{ template "harbor.core.servicePort" . }}
+      - path: "/c"
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.core" . }}
+            port:
+              number: {{ template "harbor.core.servicePort" . }}
+{{- end }}
+    {{- if .Values.expose.ingress.hosts.core }}
+    host: {{ .Values.expose.ingress.hosts.core }}
+    {{- end }}
+  tls:
+  - hosts:
+    - "{{ .Values.expose.ingress.hosts.core }}"
+    secretName: {{ .Values.expose.tls.secret.secretName }}
+
+
+---
+{{- if .Values.notary.enabled }}
+{{- if semverCompare "<1.14-0" .Capabilities.KubeVersion.GitVersion }}
+apiVersion: extensions/v1beta1
+{{- else if semverCompare "<1.19-0" .Capabilities.KubeVersion.GitVersion }}
+apiVersion: networking.k8s.io/v1beta1
+{{- else }}
+apiVersion: networking.k8s.io/v1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ template "harbor.ingress-notary" . }}
+  annotations:
+{{ toYaml .Values.expose.ingress.annotations | indent 4 }}
+{{- if .Values.internalTLS.enabled }}
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.expose.ingress.ingressClassName }}
+  rules:
+  - host: {{ .Values.expose.ingress.hosts.notary }}
+    http:
+      paths:
+      - path: "/"
+{{- if semverCompare "<1.19-0" .Capabilities.KubeVersion.GitVersion }}
+        backend:
+          serviceName: {{ template "harbor.notary-server" . }}
+          servicePort: 4443
+{{- else }}
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ template "harbor.notary-server" . }}
+            port:
+              number: 4443
+{{- end }}
+    {{- if .Values.expose.ingress.hosts.notary }}
+    host: {{ .Values.expose.ingress.hosts.notary }}
+    {{- end }}
+{{- end }}
