@@ -33,7 +33,7 @@ expose:
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/proxy-body-size: 15m
+      nginx.ingress.kubernetes.io/proxy-body-size: 5G
       cert-manager.io/cluster-issuer: letsencrypt-prod
   clusterIP:
     # The name of ClusterIP service
